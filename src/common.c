@@ -1,6 +1,10 @@
 
 #include "common.h"
 
+#ifndef VDD33
+#define VDD33 33
+#endif
+
 
 void wait_for_wifi_connection()
 {
@@ -30,4 +34,19 @@ void wait_for_wifi_connection()
     delay(1000);
 }
 
+
+void ensure_phy_info() {
+    sdk_phy_info_t * info = malloc(sizeof(sdk_phy_info_t));;
+
+    read_saved_phy_info(info);
+    printf("VERSION: %d\n", info->version);
+    printf("VDD33_CONST: %d\n", info->pa_vdd);
+    if (info->pa_vdd != VDD33) {
+        printf("vdd33_const is not set properly, trying to set it to %d\n", VDD33);
+        info->pa_vdd = VDD33;
+        write_saved_phy_info(info);
+        printf("setting vdd33_const to %d done. So, restarting...\n", VDD33);
+        sdk_system_restart();
+    }
+}
 
