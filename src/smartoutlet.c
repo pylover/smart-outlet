@@ -14,11 +14,11 @@
 #include "common.h"
 
 
-#define STATUS_QUEUE "lab:status"
-#define OUTLET1_QUEUE "lab:heater"
-#define OUTLET2_QUEUE "lab:powersupply"
-#define OUTLET3_QUEUE "lab:signalgenerator"
-#define OUTLET4_QUEUE "lab:oscilloscope"
+#define STATUS_QUEUE  EASYQ_LOGIN":status"
+#define OUTLET1_QUEUE EASYQ_LOGIN":heater"
+#define OUTLET2_QUEUE EASYQ_LOGIN":powersupply"
+#define OUTLET3_QUEUE EASYQ_LOGIN":signalgenerator"
+#define OUTLET4_QUEUE EASYQ_LOGIN":oscilloscope"
 
 #define OUTLET1 3
 #define OUTLET2 12
@@ -88,12 +88,17 @@ void sender(void* args) {
         }
         printf("Session ID: %s\n", eq->id);
 
-        while (1) {
+        while (eq->ready) {
             sprintf(buff, "%08d:%.3f", c, measure_current());
-            easyq_push(eq, queue, buff, -1);
+            err = easyq_push(eq, queue, buff, -1);
+            if (err != ERR_OK) {
+                printf("Write error: %d", err);
+                break;
+            }
             delay(CURRENT_MEASURE_INTERVAL);
             c++;
         }
+        easyq_close(eq);
     }
 }
 
@@ -121,8 +126,10 @@ void listener(void* args) {
     };
 
     while (1) {
+        printf("Waiting 1s");
         delay(1000);
         if (eq == NULL || !eq->ready) {
+            printf("EasyQ is not READY, waiting ...\n");
             continue;
         }
 
